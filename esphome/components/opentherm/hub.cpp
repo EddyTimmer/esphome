@@ -201,16 +201,16 @@ void OpenthermHub::process_response(OpenthermData &data) {
                                              OPENTHERM_MESSAGE_RESPONSE_POSTSCRIPT, )
   }
 
-  if (response.id == (MessageId)0) {  // STATUS
-    uint8_t hb = response.valueHB;
-    uint8_t lb = response.valueLB;
+  if (data.id == (MessageId)0) {  // STATUS
+    uint8_t hb = data.valueHB;
+    uint8_t lb = data.valueLB;
     ESP_LOGD("opentherm",
             "STATUS READ HB=0x%02X LB=0x%02X  cool=%d ch=%d dhw=%d flame=%d",
             hb, lb,
-            (hb & 0x04) != 0,   // cool
-            (lb & 0x02) != 0,   // ch
-            (lb & 0x01) != 0,   // dhw
-            (lb & 0x08) != 0);  // flame
+            (hb & 0x04) != 0,   // cool (master HB bit2)
+            (lb & 0x02) != 0,   // ch   (slave LB bit1)
+            (lb & 0x01) != 0,   // dhw  (slave LB bit0)
+            (lb & 0x08) != 0);  // flame(slave LB bit3)
   }
 }
 
