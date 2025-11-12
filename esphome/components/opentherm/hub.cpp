@@ -202,7 +202,7 @@ void OpenthermHub::process_response(OpenthermData &data) {
     ESP_LOGD(TAG, "STATUS READ HB=0x%02X LB=0x%02X  cool=%d ch=%d dhw=%d flame=%d",
              hb, lb, (int)cool, (int)ch, (int)dhw, (int)flame);
   }
-  
+
   switch (data.id) {
     OPENTHERM_SENSOR_MESSAGE_HANDLERS(OPENTHERM_MESSAGE_RESPONSE_MESSAGE, OPENTHERM_MESSAGE_RESPONSE_ENTITY, ,
                                       OPENTHERM_MESSAGE_RESPONSE_POSTSCRIPT, )
