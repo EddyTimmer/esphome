@@ -78,20 +78,16 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
     return d;
   }
 
-  if (request_id == static_cast<MessageId>(0)) {        // STATUS
+  if (request_id == static_cast<MessageId>(0)) {  // STATUS
     OpenthermData d; d.id = request_id;
-    if (this->cooling_enable) {
-      uint32_t now = millis();
-      // elke ~2s WRITE 0x0600 → cool enable
-      if (now - this->last_cool_write_ms_ > 2000u) {
-        d.type = MessageType::WRITE_DATA;
-        d.valueHB = 0x06;  // 0x0600
-        d.valueLB = 0x00;
-        this->last_cool_write_ms_ = now;
-        return d;
-      }
+    if (this->cooling_enable && ((this->cool_write_cycle_++ % 5u) == 0u)) {
+      // 1x per 5 cycli WRITE 0x0600 → CoolingEnable=ON
+      d.type = MessageType::WRITE_DATA;
+      d.valueHB = 0x06;  // 0x0600
+      d.valueLB = 0x00;
+      return d;
     }
-    // verder gewoon READ (payload wordt toch genegeerd)
+    // anders gewoon READ (payload wordt genegeerd)
     d.type = MessageType::READ_DATA;
     d.valueHB = 0x00;
     d.valueLB = 0x00;
