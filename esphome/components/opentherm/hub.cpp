@@ -70,25 +70,27 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
   // We need this special logic for STATUS message because we have two options for specifying boiler modes:
   // with static config values in the hub, or with separate switches.
   if (request_id == MessageId::STATUS) {
-    if (this->master_status_dirty_) {
+    // Als er iets veranderde of we staan op WRITE, schrijf master HB-bits
+    if (master_status_dirty_ || status_write_next_) {
       data.type    = MessageType::WRITE_DATA;
-      data.valueLB = 0x00;  // slave byte laten we leeg
+      data.valueLB = 0x00;  // slave byte niet door ons gevuld
       data.valueHB =
-          (this->ch_enable          ? (1 << 0) : 0) |
-          (this->dhw_enable         ? (1 << 1) : 0) |
-          (this->cooling_enable     ? (1 << 2) : 0) |
-          (this->otc_active         ? (1 << 3) : 0) |
-          (this->ch2_active         ? (1 << 4) : 0) |
-          (this->summer_mode_active ? (1 << 5) : 0) |
-          (this->dhw_block          ? (1 << 6) : 0);
-      this->master_status_dirty_ = false;
-      return data;
+          (ch_enable           ? (1 << 0) : 0) |
+          (dhw_enable          ? (1 << 1) : 0) |
+          (cooling_enable      ? (1 << 2) : 0) |
+          (otc_active          ? (1 << 3) : 0) |
+          (ch2_active          ? (1 << 4) : 0) |
+          (summer_mode_active  ? (1 << 5) : 0) |
+          (dhw_block           ? (1 << 6) : 0);
+      master_status_dirty_ = false;
+      status_write_next_   = false;   // volgende keer READ
     } else {
       data.type = MessageType::READ_DATA;
-      // HB/LB worden bij READ niet gebruikt
-      return data;
+      status_write_next_ = true;      // volgende keer WRITE
     }
+    return data;
   }
+
 
 
   // Next, we start with write requests from switches and other inputs,

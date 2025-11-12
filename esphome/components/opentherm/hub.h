@@ -150,7 +150,8 @@ class OpenthermHub : public Component {
   bool ch_enable = true, dhw_enable = true, cooling_enable = false, otc_active = false, ch2_active = false,
        summer_mode_active = false, dhw_block = false;
 
-  mutable bool master_status_dirty_ = true;
+  mutable bool master_status_dirty_ = true;   // mag in const functie gewist worden
+  mutable bool status_write_next_   = true;   // om WRITE/READ af te wisselen
 
   // Setters for the status variables
   void set_ch_enable(bool v)      { this->ch_enable = v; this->master_status_dirty_ = true; }
