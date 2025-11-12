@@ -78,13 +78,17 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
     return d;
   }
 
-  if (request_id == static_cast<MessageId>(0)) {
+  if (request_id == static_cast<MessageId>(0)) {          // STATUS
     OpenthermData d; d.id = request_id;
-    d.type = MessageType::WRITE_DATA;
-    uint16_t status = 0x0200;   // CH=0, DHW=1
-    if (this->cooling_enable) status |= 0x0400; // bit 10 → CoolingEnable
-    d.valueHB = status >> 8;
-    d.valueLB = status & 0xFF;
+    if (this->cooling_enable) {
+      // Arduino-truc: READ + payload 0x0600 → CoolingEnable
+      d.type = MessageType::READ_DATA;
+      d.valueHB = 0x06;  // HB=0x06, LB=0x00
+      d.valueLB = 0x00;
+    } else {
+      d.type = MessageType::READ_DATA;
+      d.valueHB = 0x00; d.valueLB = 0x00;
+    }
     return d;
   }
 
@@ -195,9 +199,6 @@ void OpenthermHub::setup() {
   // communicate at least once every second. Sending the status request is
   // good practice anyway.
   this->add_repeating_message(MessageId::STATUS);
-  this->add_repeating_message(static_cast<MessageId>(17)); // 0x11 Rel. modulation (READ)
-  this->add_repeating_message(static_cast<MessageId>(7));  // 0x07 Cooling control (WRITE 0.00)
-  this->add_repeating_message(static_cast<MessageId>(9));  // 0x09 DHW flow temp (READ)
   this->add_repeating_message(static_cast<MessageId>(0));  // 0x00 Status (READ)
   this->add_repeating_message(static_cast<MessageId>(1));  // 0x01 CH setpoint (WRITE 10.00)
   this->add_repeating_message(static_cast<MessageId>(16)); // 0x10 Room setpoint (WRITE target)
