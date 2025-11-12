@@ -78,20 +78,20 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
     return d;
   }
 
-  if (request_id == static_cast<MessageId>(0)) {          // STATUS
+  // STATUS (ID 0): tijdens koelen READ + payload 0x0600
+  if (request_id == static_cast<MessageId>(0)) {
     OpenthermData d; d.id = request_id;
+    d.type = MessageType::READ_DATA;       // belangrijk: READ, geen WRITE
     if (this->cooling_enable) {
-      // Arduino-truc: READ + payload 0x0600 → CoolingEnable
-      d.type = MessageType::READ_DATA;
-      d.valueHB = 0x06;  // HB=0x06, LB=0x00
+      d.valueHB = 0x06;                    // 0x0600 → cooling enabled
       d.valueLB = 0x00;
     } else {
-      d.type = MessageType::READ_DATA;
-      d.valueHB = 0x00; d.valueLB = 0x00;
+      d.valueHB = 0x00;
+      d.valueLB = 0x00;
     }
     return d;
   }
-
+  
   // (optioneel) ID 14: Max modulation = 100% bij koelen
   if (request_id == static_cast<MessageId>(14)) {
     OpenthermData d; d.id = request_id;
