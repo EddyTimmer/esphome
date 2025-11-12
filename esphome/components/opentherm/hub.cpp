@@ -80,17 +80,17 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
     bool const summer_active    = this->summer_mode_active;
     bool const dhw_blocked      = this->dhw_block;
 
-    data.type = MessageType::WRITE_DATA;   // ← was READ_DATA
-    data.valueLB = 0x00;                   // slave byte niet door ons gevuld
+    // bij STATUS:
+    data.type   = MessageType::WRITE_DATA;  // i.p.v. READ
+    data.valueLB = 0x00;
     data.valueHB =
-        (ch_enabled ? 1 : 0)
-      | (dhw_enabled ? (1 << 1) : 0)
-      | (cooling_enabled ? (1 << 2) : 0)   // ← cooling bit
-      | (otc_enabled ? (1 << 3) : 0)
-      | (ch2_enabled ? (1 << 4) : 0)
-      | (summer_active ? (1 << 5) : 0)
-      | (dhw_blocked ? (1 << 6) : 0);
-
+        (this->ch_enable        ? (1<<0) : 0) |
+        (this->dhw_enable       ? (1<<1) : 0) |
+        (this->cooling_enable   ? (1<<2) : 0) |   // ← deze regel erbij
+        (this->otc_active       ? (1<<3) : 0) |
+        (this->ch2_active       ? (1<<4) : 0) |
+        (this->summer_mode_active ? (1<<5) : 0) |
+        (this->dhw_block        ? (1<<6) : 0);
     return data;
   }
 
