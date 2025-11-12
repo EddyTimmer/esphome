@@ -119,15 +119,6 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
     return d;
   }
 
-  // ID0: STATUS -> alleen READ
-  if (resp.id == (MessageId)0) {
-    ESP_LOGD("opentherm", "STATUS READ HB=0x%02X LB=0x%02X (cool=%d ch=%d dhw=%d flame=%d)",
-            resp.valueHB, resp.valueLB,
-            (resp.valueHB & 0x04) != 0,            // voorbeeldbit voor cool
-            (resp.valueLB & 0x02) != 0,            // voorbeeldbit voor ch
-            (resp.valueLB & 0x01) != 0,
-            (resp.valueLB & 0x08) != 0);
-  }
 
   // We need this special logic for STATUS message because we have two options for specifying boiler modes:
   // with static config values in the hub, or with separate switches.
@@ -200,6 +191,18 @@ void OpenthermHub::process_response(OpenthermData &data) {
   ESP_LOGD(TAG, "Received OpenTherm response with id %d (%s)", data.id,
            this->opentherm_->message_id_to_str((MessageId) data.id));
   this->opentherm_->debug_data(data);
+
+  if (response.id == (MessageId)0) {  // STATUS
+    uint8_t hb = response.valueHB;
+    uint8_t lb = response.valueLB;
+    ESP_LOGD("opentherm",
+            "STATUS READ HB=0x%02X LB=0x%02X  cool=%d ch=%d dhw=%d flame=%d",
+            hb, lb,
+            (hb & 0x04) != 0,    // cool bit (voorbeeld)
+            (lb & 0x02) != 0,    // ch bit
+            (lb & 0x01) != 0,    // dhw bit
+            (lb & 0x08) != 0);   // flame bit
+  }
 
   switch (data.id) {
     OPENTHERM_SENSOR_MESSAGE_HANDLERS(OPENTHERM_MESSAGE_RESPONSE_MESSAGE, OPENTHERM_MESSAGE_RESPONSE_ENTITY, ,
