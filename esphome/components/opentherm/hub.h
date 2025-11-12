@@ -152,6 +152,7 @@ class OpenthermHub : public Component {
 
   mutable bool master_status_dirty_ = true;   // mag in const functie gewist worden
   mutable bool status_write_next_   = true;   // om WRITE/READ af te wisselen
+  mutable uint32_t last_cool_write_ms_ = 0;
 
   // Setters for the status variables
   void set_ch_enable(bool v)      { this->ch_enable = v; this->master_status_dirty_ = true; }
