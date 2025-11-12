@@ -194,8 +194,12 @@ void OpenthermHub::setup() {
   // communicate at least once every second. Sending the status request is
   // good practice anyway.
   this->add_repeating_message(MessageId::STATUS);
-  this->add_repeating_message(static_cast<MessageId>(7));
-  this->add_repeating_message(static_cast<MessageId>(14));
+  this->add_repeating_message(static_cast<MessageId>(17)); // 0x11 Rel. modulation (READ)
+  this->add_repeating_message(static_cast<MessageId>(7));  // 0x07 Cooling control (WRITE 0.00)
+  this->add_repeating_message(static_cast<MessageId>(9));  // 0x09 DHW flow temp (READ)
+  this->add_repeating_message(static_cast<MessageId>(0));  // 0x00 Status (READ)
+  this->add_repeating_message(static_cast<MessageId>(1));  // 0x01 CH setpoint (WRITE 10.00)
+  this->add_repeating_message(static_cast<MessageId>(16)); // 0x10 Room setpoint (WRITE target)
   this->write_initial_messages_(this->messages_);
   this->message_iterator_ = this->messages_.begin();
 }
