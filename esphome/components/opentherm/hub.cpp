@@ -81,12 +81,11 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
     bool const dhw_blocked      = this->dhw_block;
     // STATUS: schrijf master high-byte met onze flags
     data.type    = MessageType::WRITE_DATA;   // blijft WRITE
-    data.valueLB = 0x00;                      // slave-byte laten we 0
-
+    data.valueLB = 0x00;                      // slave-byte niet door ons gevuld
     data.valueHB =
         (this->ch_enable           ? (1 << 0) : 0) |
         (this->dhw_enable          ? (1 << 1) : 0) |
-        (this->cooling_enable      ? (1 << 2) : 0) |  // ← KOELING BIT
+        (this->cooling_enable      ? (1 << 2) : 0) |   // ← KOELING
         (this->otc_active          ? (1 << 3) : 0) |
         (this->ch2_active          ? (1 << 4) : 0) |
         (this->summer_mode_active  ? (1 << 5) : 0) |
