@@ -68,22 +68,13 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
   data.valueLB = 0;
 
   #include <math.h>
-  auto pack_f88 = [](float v) -> uint16_t {
-    if (v < 0.0f) v = 0.0f;
-    if (v > 255.996f) v = 255.996f;
-    return (uint16_t) lroundf(v * 256.0f);
-  };
+  auto pack_f88 = [](float v){ if(v<0)v=0; if(v>255.996f)v=255.996f; return (uint16_t)lroundf(v*256.0f); };
 
-  // ID 7: Cooling control → **0.00** (zoals jouw Arduino)
-  if (request_id == static_cast<MessageId>(7)) {
+  if (request_id == static_cast<MessageId>(7)) {         // COOLING_CONTROL
     OpenthermData d; d.id = request_id;
-    if (this->cooling_enable) {
-      d.type = MessageType::WRITE_DATA;
-      uint16_t w = pack_f88(0.0f);       // ⟵ BELANGRIJK: 0.00, niet 57.00
-      d.valueHB = w >> 8; d.valueLB = w & 0xFF;
-    } else {
-      d.type = MessageType::READ_DATA;
-    }
+    d.type = MessageType::WRITE_DATA;                    // <-- force WRITE
+    uint16_t w = pack_f88(0.0f);                         // <-- exact 0.00
+    d.valueHB = w >> 8; d.valueLB = w & 0xFF;
     return d;
   }
 
