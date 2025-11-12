@@ -77,6 +77,7 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
   // --- ID 7: Cooling control ≈ 57.00 ---
   if (request_id == static_cast<MessageId>(7) && this->cooling_enable) {
     OpenthermData data;
+    ESP_LOGD("opentherm", ">>> COOL WRITE 7 triggered <<<");
     data.type = MessageType::WRITE_DATA;
     uint16_t w = pack_f88(57.0f);         // 57.00 → f8.8
     data.valueHB = (w >> 8) & 0xFF;
