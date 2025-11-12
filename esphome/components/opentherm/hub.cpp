@@ -70,11 +70,21 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
   #include <math.h>
   auto pack_f88 = [](float v){ if(v<0)v=0; if(v>255.996f)v=255.996f; return (uint16_t)lroundf(v*256.0f); };
 
-  if (request_id == static_cast<MessageId>(7)) {         // COOLING_CONTROL
+  if (request_id == static_cast<MessageId>(7)) {
     OpenthermData d; d.id = request_id;
-    d.type = MessageType::WRITE_DATA;                    // <-- force WRITE
-    uint16_t w = pack_f88(0.0f);                         // <-- exact 0.00
-    d.valueHB = w >> 8; d.valueLB = w & 0xFF;
+    d.type = MessageType::READ_DATA;        // ← i.p.v. WRITE_DATA
+    d.valueHB = 0;
+    d.valueLB = 0;
+    return d;
+  }
+
+  if (request_id == static_cast<MessageId>(0)) {
+    OpenthermData d; d.id = request_id;
+    d.type = MessageType::WRITE_DATA;
+    uint16_t status = 0x0200;   // CH=0, DHW=1
+    if (this->cooling_enable) status |= 0x0400; // bit 10 → CoolingEnable
+    d.valueHB = status >> 8;
+    d.valueLB = status & 0xFF;
     return d;
   }
 
