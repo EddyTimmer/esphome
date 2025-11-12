@@ -74,37 +74,26 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
     return static_cast<uint16_t>(lroundf(v * 256.0f));
   };
 
-  // --- ID 7: Cooling control (≈ 57.00) ---
-  if (request_id == static_cast<MessageId>(7)) {
-    OpenthermData d;
-    d.id = request_id;
-    if (this->cooling_enable) {
-      d.type = MessageType::WRITE_DATA;
-      uint16_t w = pack_f88(57.0f);
-      d.valueHB = (w >> 8) & 0xFF;
-      d.valueLB = (w      ) & 0xFF;
-      ESP_LOGD("opentherm", "COOL active → WRITE id 7 = 57.00");
-    } else {
-      d.type = MessageType::READ_DATA; // netjes “weg-lezend” i.p.v. error
-    }
-    return d;
-  }
+if (request_id == static_cast<MessageId>(7)) {
+  OpenthermData d; d.id = request_id;
+  if (this->cooling_enable) {
+    d.type = MessageType::WRITE_DATA;
+    uint16_t w = pack_f88(57.0f);
+    d.valueHB = w >> 8; d.valueLB = w & 0xFF;
+  } else d.type = MessageType::READ_DATA;
+  return d;
+}
 
-  // --- ID 14: Max modulation level (100%) ---
-  if (request_id == static_cast<MessageId>(14)) {
-    OpenthermData d;
-    d.id = request_id;
-    if (this->cooling_enable) {
-      d.type = MessageType::WRITE_DATA;
-      uint16_t w = pack_f88(100.0f);
-      d.valueHB = (w >> 8) & 0xFF;
-      d.valueLB = (w      ) & 0xFF;
-      ESP_LOGD("opentherm", "COOL active → WRITE id 14 = 100%%");
-    } else {
-      d.type = MessageType::READ_DATA;
-    }
-    return d;
-  }
+if (request_id == static_cast<MessageId>(14)) {
+  OpenthermData d; d.id = request_id;
+  if (this->cooling_enable) {
+    d.type = MessageType::WRITE_DATA;
+    uint16_t w = pack_f88(100.0f);
+    d.valueHB = w >> 8; d.valueLB = w & 0xFF;
+  } else d.type = MessageType::READ_DATA;
+  return d;
+}
+
 
   // We need this special logic for STATUS message because we have two options for specifying boiler modes:
   // with static config values in the hub, or with separate switches.
