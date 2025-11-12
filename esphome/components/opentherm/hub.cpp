@@ -80,16 +80,10 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
 
   if (request_id == static_cast<MessageId>(0)) {  // STATUS
     OpenthermData d; d.id = request_id;
-    if (this->cooling_enable && ((this->cool_write_cycle_++ % 5u) == 0u)) {
-      d.type = MessageType::WRITE_DATA;
-      d.valueHB = 0x06;
-      d.valueLB = 0x00;
-      ESP_LOGD("opentherm", "FORCE WRITE STATUS 0x0600 (cool enable)");
-      return d;
-    }
-    d.type = MessageType::READ_DATA;
-    d.valueHB = 0x00;
+    d.type = MessageType::WRITE_DATA;
+    d.valueHB = 0x06;   // 0x0600 => CH=0, DHW=1, COOL=1
     d.valueLB = 0x00;
+    ESP_LOGW("opentherm", "TEST: ALWAYS WRITE STATUS 0x0600 (cool enable)");
     return d;
   }
 
