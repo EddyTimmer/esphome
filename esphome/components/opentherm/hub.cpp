@@ -120,10 +120,13 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
   }
 
   // ID0: STATUS -> alleen READ
-  if (request_id == (MessageId)0) {
-    OpenthermData d; d.id = request_id;
-    d.type = MessageType::READ_DATA; d.valueHB = 0; d.valueLB = 0;
-    return d;
+  if (resp.id == (MessageId)0) {
+    ESP_LOGD("opentherm", "STATUS READ HB=0x%02X LB=0x%02X (cool=%d ch=%d dhw=%d flame=%d)",
+            resp.valueHB, resp.valueLB,
+            (resp.valueHB & 0x04) != 0,            // voorbeeldbit voor cool
+            (resp.valueLB & 0x02) != 0,            // voorbeeldbit voor ch
+            (resp.valueLB & 0x01) != 0,
+            (resp.valueLB & 0x08) != 0);
   }
 
   // We need this special logic for STATUS message because we have two options for specifying boiler modes:
