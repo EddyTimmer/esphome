@@ -190,6 +190,17 @@ OpenthermHub::OpenthermHub() : Component(), in_pin_{}, out_pin_{} {}
 void OpenthermHub::process_response(OpenthermData &data) {
   ESP_LOGD(TAG, "Received OpenTherm response with id %d (%s)", data.id,
            this->opentherm_->message_id_to_str((MessageId) data.id));
+  this->opentherm_->debug_data(data);
+
+  switch (data.id) {
+    OPENTHERM_SENSOR_MESSAGE_HANDLERS(OPENTHERM_MESSAGE_RESPONSE_MESSAGE, OPENTHERM_MESSAGE_RESPONSE_ENTITY, ,
+                                      OPENTHERM_MESSAGE_RESPONSE_POSTSCRIPT, )
+  }
+  switch (data.id) {
+    OPENTHERM_BINARY_SENSOR_MESSAGE_HANDLERS(OPENTHERM_MESSAGE_RESPONSE_MESSAGE, OPENTHERM_MESSAGE_RESPONSE_ENTITY, ,
+                                             OPENTHERM_MESSAGE_RESPONSE_POSTSCRIPT, )
+  }
+
   if (response.id == (MessageId)0) {  // STATUS
     uint8_t hb = response.valueHB;
     uint8_t lb = response.valueLB;
@@ -200,16 +211,6 @@ void OpenthermHub::process_response(OpenthermData &data) {
             (lb & 0x02) != 0,   // ch
             (lb & 0x01) != 0,   // dhw
             (lb & 0x08) != 0);  // flame
-  }
-  this->opentherm_->debug_data(data);
-
-  switch (data.id) {
-    OPENTHERM_SENSOR_MESSAGE_HANDLERS(OPENTHERM_MESSAGE_RESPONSE_MESSAGE, OPENTHERM_MESSAGE_RESPONSE_ENTITY, ,
-                                      OPENTHERM_MESSAGE_RESPONSE_POSTSCRIPT, )
-  }
-  switch (data.id) {
-    OPENTHERM_BINARY_SENSOR_MESSAGE_HANDLERS(OPENTHERM_MESSAGE_RESPONSE_MESSAGE, OPENTHERM_MESSAGE_RESPONSE_ENTITY, ,
-                                             OPENTHERM_MESSAGE_RESPONSE_POSTSCRIPT, )
   }
 }
 
