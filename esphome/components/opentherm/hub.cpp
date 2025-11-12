@@ -112,7 +112,7 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
   if (request_id == (MessageId)16) {
     OpenthermData d; d.id = request_id;
     d.type = MessageType::WRITE_DATA;
-    float sp = this->cooling_enable ? 18.5f : /* jouw heat target */ 21.0f;
+    float sp = this->cooling_enable ? 18.5f : 21.0f;
     uint16_t w = pack_f88(sp);
     d.valueHB = w >> 8; d.valueLB = w & 0xFF;
     return d;
@@ -122,7 +122,7 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
   if (request_id == (MessageId)1) {
     OpenthermData d; d.id = request_id;
     d.type = MessageType::WRITE_DATA;
-    float tset = this->cooling_enable ? 10.0f : /* normale heat t_set */;
+    float tset = this->cooling_enable ? 10.0f : 21.0f;
     uint16_t w = pack_f88(tset);
     d.valueHB = w >> 8; d.valueLB = w & 0xFF;
     return d;
