@@ -192,18 +192,6 @@ void OpenthermHub::process_response(OpenthermData &data) {
            this->opentherm_->message_id_to_str((MessageId) data.id));
   this->opentherm_->debug_data(data);
 
-  if (response.id == (MessageId)0) {  // STATUS
-    uint8_t hb = response.valueHB;
-    uint8_t lb = response.valueLB;
-    ESP_LOGD("opentherm",
-            "STATUS READ HB=0x%02X LB=0x%02X  cool=%d ch=%d dhw=%d flame=%d",
-            hb, lb,
-            (hb & 0x04) != 0,   // cool
-            (lb & 0x02) != 0,   // ch
-            (lb & 0x01) != 0,   // dhw
-            (lb & 0x08) != 0);  // flame
-  }
-
   switch (data.id) {
     OPENTHERM_SENSOR_MESSAGE_HANDLERS(OPENTHERM_MESSAGE_RESPONSE_MESSAGE, OPENTHERM_MESSAGE_RESPONSE_ENTITY, ,
                                       OPENTHERM_MESSAGE_RESPONSE_POSTSCRIPT, )
@@ -366,6 +354,18 @@ void OpenthermHub::sync_loop_() {
   // There may be a timer error at this point
   if (this->handle_error_(this->opentherm_->get_mode())) {
     return;
+  }
+
+  if (response.id == (MessageId)0) {  // STATUS
+    uint8_t hb = response.valueHB;
+    uint8_t lb = response.valueLB;
+    ESP_LOGD("opentherm",
+            "STATUS READ HB=0x%02X LB=0x%02X  cool=%d ch=%d dhw=%d flame=%d",
+            hb, lb,
+            (hb & 0x04) != 0,   // cool
+            (lb & 0x02) != 0,   // ch
+            (lb & 0x01) != 0,   // dhw
+            (lb & 0x08) != 0);  // flame
   }
 
   // Spin while response is being received
