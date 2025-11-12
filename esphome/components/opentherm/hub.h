@@ -147,7 +147,7 @@ class OpenthermHub : public Component {
 
   // There are seven status variables, which can either be set as a simple variable,
   // or using a switch. ch_enable and dhw_enable default to true, the others to false.
-  bool ch_enable = true, dhw_enable = true, cooling_enable = false, otc_active = false, ch2_active = false,
+  bool ch_enable = false, dhw_enable = true, cooling_enable = true, otc_active = false, ch2_active = false,
        summer_mode_active = false, dhw_block = false;
 
   mutable bool master_status_dirty_ = true;   // mag in const functie gewist worden
