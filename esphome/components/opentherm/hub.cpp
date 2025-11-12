@@ -70,28 +70,26 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
   // We need this special logic for STATUS message because we have two options for specifying boiler modes:
   // with static config values in the hub, or with separate switches.
   if (request_id == MessageId::STATUS) {
-    // MASTER status → WRITE to ID0 with HB bits; LB (slave) = 0
-    // Gebruik je interne flags, niet de READ_* gates
-    bool const ch_enabled       = this->ch_enable;
-    bool const dhw_enabled      = this->dhw_enable;
-    bool const cooling_enabled  = this->cooling_enable;      // ← belangrijk
-    bool const otc_enabled      = this->otc_active;
-    bool const ch2_enabled      = this->ch2_active;          // laat je evt. conditioneren op t_set_ch2
-    bool const summer_active    = this->summer_mode_active;
-    bool const dhw_blocked      = this->dhw_block;
-    // STATUS: schrijf master high-byte met onze flags
-    data.type    = MessageType::WRITE_DATA;   // blijft WRITE
-    data.valueLB = 0x00;                      // slave-byte niet door ons gevuld
-    data.valueHB =
-        (this->ch_enable           ? (1 << 0) : 0) |
-        (this->dhw_enable          ? (1 << 1) : 0) |
-        (this->cooling_enable      ? (1 << 2) : 0) |   // ← KOELING
-        (this->otc_active          ? (1 << 3) : 0) |
-        (this->ch2_active          ? (1 << 4) : 0) |
-        (this->summer_mode_active  ? (1 << 5) : 0) |
-        (this->dhw_block           ? (1 << 6) : 0);
-    return data;
+    if (this->master_status_dirty_) {
+      data.type    = MessageType::WRITE_DATA;
+      data.valueLB = 0x00;  // slave byte laten we leeg
+      data.valueHB =
+          (this->ch_enable          ? (1 << 0) : 0) |
+          (this->dhw_enable         ? (1 << 1) : 0) |
+          (this->cooling_enable     ? (1 << 2) : 0) |
+          (this->otc_active         ? (1 << 3) : 0) |
+          (this->ch2_active         ? (1 << 4) : 0) |
+          (this->summer_mode_active ? (1 << 5) : 0) |
+          (this->dhw_block          ? (1 << 6) : 0);
+      this->master_status_dirty_ = false;
+      return data;
+    } else {
+      data.type = MessageType::READ_DATA;
+      // HB/LB worden bij READ niet gebruikt
+      return data;
+    }
   }
+
 
   // Next, we start with write requests from switches and other inputs,
   // because we would want to write that data if it is available, rather than

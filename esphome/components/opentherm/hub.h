@@ -150,6 +150,8 @@ class OpenthermHub : public Component {
   bool ch_enable = true, dhw_enable = true, cooling_enable = false, otc_active = false, ch2_active = false,
        summer_mode_active = false, dhw_block = false;
 
+  bool master_status_dirty_ = true;
+
   // Setters for the status variables
   void set_ch_enable(bool v)      { this->ch_enable = v; this->master_status_dirty_ = true; }
   void set_dhw_enable(bool v)     { this->dhw_enable = v; this->master_status_dirty_ = true; }
