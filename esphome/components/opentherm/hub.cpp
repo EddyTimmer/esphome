@@ -70,20 +70,26 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
   // We need this special logic for STATUS message because we have two options for specifying boiler modes:
   // with static config values in the hub, or with separate switches.
   if (request_id == MessageId::STATUS) {
-    // NOLINTBEGIN
-    bool const ch_enabled = this->ch_enable && OPENTHERM_READ_ch_enable && OPENTHERM_READ_t_set > 0.0;
-    bool const dhw_enabled = this->dhw_enable && OPENTHERM_READ_dhw_enable;
-    bool const cooling_enabled =
-        this->cooling_enable && OPENTHERM_READ_cooling_enable && OPENTHERM_READ_cooling_control > 0.0;
-    bool const otc_enabled = this->otc_active && OPENTHERM_READ_otc_active;
-    bool const ch2_enabled = this->ch2_active && OPENTHERM_READ_ch2_active && OPENTHERM_READ_t_set_ch2 > 0.0;
-    bool const summer_mode_is_active = this->summer_mode_active && OPENTHERM_READ_summer_mode_active;
-    bool const dhw_blocked = this->dhw_block && OPENTHERM_READ_dhw_block;
-    // NOLINTEND
+    // MASTER status → WRITE to ID0 with HB bits; LB (slave) = 0
+    // Gebruik je interne flags, niet de READ_* gates
+    bool const ch_enabled       = this->ch_enable;
+    bool const dhw_enabled      = this->dhw_enable;
+    bool const cooling_enabled  = this->cooling_enable;      // ← belangrijk
+    bool const otc_enabled      = this->otc_active;
+    bool const ch2_enabled      = this->ch2_active;          // laat je evt. conditioneren op t_set_ch2
+    bool const summer_active    = this->summer_mode_active;
+    bool const dhw_blocked      = this->dhw_block;
 
-    data.type = MessageType::READ_DATA;
-    data.valueHB = ch_enabled | (dhw_enabled << 1) | (cooling_enabled << 2) | (otc_enabled << 3) | (ch2_enabled << 4) |
-                   (summer_mode_is_active << 5) | (dhw_blocked << 6);
+    data.type = MessageType::WRITE_DATA;   // ← was READ_DATA
+    data.valueLB = 0x00;                   // slave byte niet door ons gevuld
+    data.valueHB =
+        (ch_enabled ? 1 : 0)
+      | (dhw_enabled ? (1 << 1) : 0)
+      | (cooling_enabled ? (1 << 2) : 0)   // ← cooling bit
+      | (otc_enabled ? (1 << 3) : 0)
+      | (ch2_enabled ? (1 << 4) : 0)
+      | (summer_active ? (1 << 5) : 0)
+      | (dhw_blocked ? (1 << 6) : 0);
 
     return data;
   }
