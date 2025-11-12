@@ -67,6 +67,18 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
   data.valueHB = 0;
   data.valueLB = 0;
 
+
+  if (request_id == MessageId::COOLING_CONTROL /* id 57 of 7 bij jouw lib */ && cooling_enable) {
+    data.type = MessageType::WRITE_DATA;
+    data.value = encodeFloat(57.0f);
+    return data;
+  }
+  if (request_id == MessageId::MAX_MODULATION /* id 14 */ && cooling_enable) {
+    data.type = MessageType::WRITE_DATA;
+    data.value = encodeFloat(100.0f);
+    return data;
+  }
+  
   // We need this special logic for STATUS message because we have two options for specifying boiler modes:
   // with static config values in the hub, or with separate switches.
   if (request_id == MessageId::STATUS) {
