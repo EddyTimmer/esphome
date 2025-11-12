@@ -290,18 +290,6 @@ void OpenthermHub::loop() {
       break;
   }
   this->last_mode_ = cur_mode;
-
-  if (response.id == (MessageId)0) {  // STATUS
-    uint8_t hb = response.valueHB;
-    uint8_t lb = response.valueLB;
-    ESP_LOGD("opentherm",
-            "STATUS READ HB=0x%02X LB=0x%02X  cool=%d ch=%d dhw=%d flame=%d",
-            hb, lb,
-            (hb & 0x04) != 0,   // cool
-            (lb & 0x02) != 0,   // ch
-            (lb & 0x01) != 0,   // dhw
-            (lb & 0x08) != 0);  // flame
-  }
 }
 
 bool OpenthermHub::handle_error_(OperationMode mode) {
@@ -401,7 +389,17 @@ bool OpenthermHub::should_skip_loop_(uint32_t cur_time) const {
     ESP_LOGV(TAG, "Less than 100 ms elapsed since last convo, skipping this iteration");
     return true;
   }
-
+  if (response.id == (MessageId)0) {  // STATUS
+    uint8_t hb = response.valueHB;
+    uint8_t lb = response.valueLB;
+    ESP_LOGD("opentherm",
+            "STATUS READ HB=0x%02X LB=0x%02X  cool=%d ch=%d dhw=%d flame=%d",
+            hb, lb,
+            (hb & 0x04) != 0,   // cool
+            (lb & 0x02) != 0,   // ch
+            (lb & 0x01) != 0,   // dhw
+            (lb & 0x08) != 0);  // flame
+  }
   return false;
 }
 
