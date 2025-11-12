@@ -83,7 +83,6 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
     d.type = MessageType::WRITE_DATA;
     d.valueHB = 0x06;   // 0x0600 => CH=0, DHW=1, COOL=1
     d.valueLB = 0x00;
-    ESP_LOGW("opentherm", "TEST: ALWAYS WRITE STATUS 0x0600 (cool enable)");
     return d;
   }
 
@@ -229,7 +228,6 @@ void OpenthermHub::setup() {
   this->add_repeating_message(MessageId::STATUS);
 
   // Voeg de drie belangrijkste berichten toe in de gewenste volgorde:
-  add_repeating_message((MessageId)17); // 0x11: Rel. modulation (READ)
   add_repeating_message((MessageId)0);  // 0x00: STATUS (WRITE 0x0600 af en toe)
   add_repeating_message((MessageId)16); // 0x10: Room setpoint (WRITE target)
   add_repeating_message((MessageId)1);  // 0x01: CH setpoint (WRITE 10.00)
