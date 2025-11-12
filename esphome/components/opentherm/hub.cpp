@@ -70,7 +70,6 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
   #include <math.h>
   auto pack_f88 = [](float v){ if(v<0)v=0; if(v>255.996f)v=255.996f; return (uint16_t)lroundf(v*256.0f); };
 
-
   if (request_id == static_cast<MessageId>(7)) {
     OpenthermData d; d.id = request_id;
     d.type = MessageType::READ_DATA;        // ← i.p.v. WRITE_DATA
@@ -100,25 +99,40 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
     return d;
   }
 
+  // ID14: Max modulation -> bij koelen 100%
   if (request_id == (MessageId)14) {
     OpenthermData d; d.id = request_id;
-    if (this->cooling_enable) {
-      d.type = MessageType::WRITE_DATA;
-      uint16_t w = pack_f88(100.0f);
-      d.valueHB = w >> 8; d.valueLB = w & 0xFF;
-    } else {
-      d.type = MessageType::READ_DATA; d.valueHB = 0; d.valueLB = 0;
-    }
+    d.type = MessageType::WRITE_DATA;
+    uint16_t w = pack_f88(this->cooling_enable ? 100.0f : 0.0f);
+    d.valueHB = w >> 8; d.valueLB = w & 0xFF;
     return d;
   }
 
+  // ID16: Room setpoint -> bij koelen bv. 18.5 °C
+  if (request_id == (MessageId)16) {
+    OpenthermData d; d.id = request_id;
+    d.type = MessageType::WRITE_DATA;
+    float sp = this->cooling_enable ? 18.5f : /* jouw heat target */ 21.0f;
+    uint16_t w = pack_f88(sp);
+    d.valueHB = w >> 8; d.valueLB = w & 0xFF;
+    return d;
+  }
+
+  // ID1: CH setpoint -> bij koelen 10.0 °C
+  if (request_id == (MessageId)1) {
+    OpenthermData d; d.id = request_id;
+    d.type = MessageType::WRITE_DATA;
+    float tset = this->cooling_enable ? 10.0f : /* normale heat t_set */;
+    uint16_t w = pack_f88(tset);
+    d.valueHB = w >> 8; d.valueLB = w & 0xFF;
+    return d;
+  }
+
+  // ID0: STATUS -> alleen READ
   if (request_id == (MessageId)0) {
     OpenthermData d; d.id = request_id;
-    if (this->cooling_enable && ((this->cool_write_cycle_++ % 5u) == 0u)) {
-      d.type = MessageType::WRITE_DATA; d.valueHB = 0x06; d.valueLB = 0x00; // 0x0600
-      return d;
-    }
-    d.type = MessageType::READ_DATA; d.valueHB = 0; d.valueLB = 0; return d;
+    d.type = MessageType::READ_DATA; d.valueHB = 0; d.valueLB = 0;
+    return d;
   }
 
   // We need this special logic for STATUS message because we have two options for specifying boiler modes:
@@ -215,11 +229,12 @@ void OpenthermHub::setup() {
   this->add_repeating_message(MessageId::STATUS);
 
   // Voeg de drie belangrijkste berichten toe in de gewenste volgorde:
-  add_repeating_message((MessageId)7);  // 0x07: Cooling control (WRITE 0.00)
-  add_repeating_message((MessageId)9);  // 0x09: DHW flow temp (READ)
+  add_repeating_message((MessageId)17); // 0x11: Rel. modulation (READ)
   add_repeating_message((MessageId)0);  // 0x00: STATUS (WRITE 0x0600 af en toe)
-  add_repeating_message((MessageId)1);  // 0x01: CH setpoint (WRITE 10.00)
   add_repeating_message((MessageId)16); // 0x10: Room setpoint (WRITE target)
+  add_repeating_message((MessageId)1);  // 0x01: CH setpoint (WRITE 10.00)
+  add_repeating_message((MessageId)14); // 0x0E: Max modulation (WRITE)
+
   // Voor debug en consistent gedrag
   ESP_LOGI(TAG, "Repeating messages configured: STATUS (0), CH_SETPOINT (1), ROOM_SETPOINT (16)");
   ESP_LOGD("opentherm", "STATUS branch: cooling_enable=%d, cycle=%u",
