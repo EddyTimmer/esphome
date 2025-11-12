@@ -78,14 +78,6 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
     return d;
   }
 
-  if (request_id == static_cast<MessageId>(0)) {  // STATUS
-    OpenthermData d; d.id = request_id;
-    d.type = MessageType::WRITE_DATA;
-    d.valueHB = 0x06;   // 0x0600 => CH=0, DHW=1, COOL=1
-    d.valueLB = 0x00;
-    return d;
-  }
-
   if (request_id == (MessageId)7) {
     OpenthermData d; d.id = request_id;
     if (this->cooling_enable) {
@@ -228,10 +220,10 @@ void OpenthermHub::setup() {
   this->add_repeating_message(MessageId::STATUS);
 
   // Voeg de drie belangrijkste berichten toe in de gewenste volgorde:
-  add_repeating_message((MessageId)0);  // 0x00: STATUS (WRITE 0x0600 af en toe)
-  add_repeating_message((MessageId)16); // 0x10: Room setpoint (WRITE target)
-  add_repeating_message((MessageId)1);  // 0x01: CH setpoint (WRITE 10.00)
-  add_repeating_message((MessageId)14); // 0x0E: Max modulation (WRITE)
+  add_repeating_message((MessageId)0);   // STATUS (READ)
+  add_repeating_message((MessageId)16);  // ROOM_SETPOINT (WRITE)
+  add_repeating_message((MessageId)1);   // CH_SETPOINT (WRITE)
+  add_repeating_message((MessageId)14);  // MAX_MODULATION (WRITE)
 
   // Voor debug en consistent gedrag
   ESP_LOGI(TAG, "Repeating messages configured: STATUS (0), CH_SETPOINT (1), ROOM_SETPOINT (16)");
