@@ -190,6 +190,17 @@ OpenthermHub::OpenthermHub() : Component(), in_pin_{}, out_pin_{} {}
 void OpenthermHub::process_response(OpenthermData &data) {
   ESP_LOGD(TAG, "Received OpenTherm response with id %d (%s)", data.id,
            this->opentherm_->message_id_to_str((MessageId) data.id));
+  if (response.id == (MessageId)0) {  // STATUS
+    uint8_t hb = response.valueHB;
+    uint8_t lb = response.valueLB;
+    ESP_LOGD("opentherm",
+            "STATUS READ HB=0x%02X LB=0x%02X  cool=%d ch=%d dhw=%d flame=%d",
+            hb, lb,
+            (hb & 0x04) != 0,   // cool
+            (lb & 0x02) != 0,   // ch
+            (lb & 0x01) != 0,   // dhw
+            (lb & 0x08) != 0);  // flame
+  }
   this->opentherm_->debug_data(data);
 
   switch (data.id) {
