@@ -67,33 +67,38 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
   data.valueHB = 0;
   data.valueLB = 0;
 
-  // Kleine helper om float → f8.8 te packen
+  #include <math.h>
   auto pack_f88 = [](float v) -> uint16_t {
     if (v < 0.0f) v = 0.0f;
     if (v > 255.996f) v = 255.996f;
-    return static_cast<uint16_t>(lroundf(v * 256.0f));
+    return (uint16_t) lroundf(v * 256.0f);
   };
 
-if (request_id == static_cast<MessageId>(7)) {
-  OpenthermData d; d.id = request_id;
-  if (this->cooling_enable) {   // exact deze naam
-    d.type = MessageType::WRITE_DATA;
-    uint16_t w = pack_f88(57.0f);
-    d.valueHB = w >> 8; d.valueLB = w & 0xFF;
-  } else d.type = MessageType::READ_DATA;
-  return d;
-}
+  // ID 7: Cooling control → **0.00** (zoals jouw Arduino)
+  if (request_id == static_cast<MessageId>(7)) {
+    OpenthermData d; d.id = request_id;
+    if (this->cooling_enable) {
+      d.type = MessageType::WRITE_DATA;
+      uint16_t w = pack_f88(0.0f);       // ⟵ BELANGRIJK: 0.00, niet 57.00
+      d.valueHB = w >> 8; d.valueLB = w & 0xFF;
+    } else {
+      d.type = MessageType::READ_DATA;
+    }
+    return d;
+  }
 
-if (request_id == static_cast<MessageId>(14)) {
-  OpenthermData d; d.id = request_id;
-  if (this->cooling_enable) {
-    d.type = MessageType::WRITE_DATA;
-    uint16_t w = pack_f88(100.0f);
-    d.valueHB = w >> 8; d.valueLB = w & 0xFF;
-  } else d.type = MessageType::READ_DATA;
-  return d;
-}
-
+  // (optioneel) ID 14: Max modulation = 100% bij koelen
+  if (request_id == static_cast<MessageId>(14)) {
+    OpenthermData d; d.id = request_id;
+    if (this->cooling_enable) {
+      d.type = MessageType::WRITE_DATA;
+      uint16_t w = pack_f88(100.0f);
+      d.valueHB = w >> 8; d.valueLB = w & 0xFF;
+    } else {
+      d.type = MessageType::READ_DATA;
+    }
+    return d;
+  }
 
   // We need this special logic for STATUS message because we have two options for specifying boiler modes:
   // with static config values in the hub, or with separate switches.
