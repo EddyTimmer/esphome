@@ -70,29 +70,40 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
   // Kleine helper om float → f8.8 te packen
   auto pack_f88 = [](float v) -> uint16_t {
     if (v < 0.0f) v = 0.0f;
-    if (v > 255.996f) v = 255.996f;  // cap
-    return static_cast<uint16_t>(lroundf(v * 256.0f));  // f * 2^8
+    if (v > 255.996f) v = 255.996f;
+    return static_cast<uint16_t>(lroundf(v * 256.0f));
   };
 
-  // --- ID 7: Cooling control ≈ 57.00 ---
-  if (request_id == static_cast<MessageId>(7) && this->cooling_enable) {
-    OpenthermData data;
-    ESP_LOGD("opentherm", ">>> COOL WRITE 7 triggered <<<");
-    data.type = MessageType::WRITE_DATA;
-    uint16_t w = pack_f88(57.0f);         // 57.00 → f8.8
-    data.valueHB = (w >> 8) & 0xFF;
-    data.valueLB = (w      ) & 0xFF;
-    return data;
+  // --- ID 7: Cooling control (≈ 57.00) ---
+  if (request_id == static_cast<MessageId>(7)) {
+    OpenthermData d;
+    d.id = request_id;
+    if (this->cooling_enable) {
+      d.type = MessageType::WRITE_DATA;
+      uint16_t w = pack_f88(57.0f);
+      d.valueHB = (w >> 8) & 0xFF;
+      d.valueLB = (w      ) & 0xFF;
+      ESP_LOGD("opentherm", "COOL active → WRITE id 7 = 57.00");
+    } else {
+      d.type = MessageType::READ_DATA; // netjes “weg-lezend” i.p.v. error
+    }
+    return d;
   }
 
-  // --- ID 14: Max modulation level = 100% ---
-  if (request_id == static_cast<MessageId>(14) && this->cooling_enable) {
-    OpenthermData data;
-    data.type = MessageType::WRITE_DATA;
-    uint16_t w = pack_f88(100.0f);        // 100.00 → f8.8
-    data.valueHB = (w >> 8) & 0xFF;
-    data.valueLB = (w      ) & 0xFF;
-    return data;
+  // --- ID 14: Max modulation level (100%) ---
+  if (request_id == static_cast<MessageId>(14)) {
+    OpenthermData d;
+    d.id = request_id;
+    if (this->cooling_enable) {
+      d.type = MessageType::WRITE_DATA;
+      uint16_t w = pack_f88(100.0f);
+      d.valueHB = (w >> 8) & 0xFF;
+      d.valueLB = (w      ) & 0xFF;
+      ESP_LOGD("opentherm", "COOL active → WRITE id 14 = 100%%");
+    } else {
+      d.type = MessageType::READ_DATA;
+    }
+    return d;
   }
 
   // We need this special logic for STATUS message because we have two options for specifying boiler modes:
@@ -189,6 +200,8 @@ void OpenthermHub::setup() {
   // communicate at least once every second. Sending the status request is
   // good practice anyway.
   this->add_repeating_message(MessageId::STATUS);
+  this->add_repeating_message(static_cast<MessageId>(7));
+  this->add_repeating_message(static_cast<MessageId>(14));
   this->write_initial_messages_(this->messages_);
   this->message_iterator_ = this->messages_.begin();
 }
