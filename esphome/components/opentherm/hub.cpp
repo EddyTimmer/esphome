@@ -260,7 +260,6 @@ void OpenthermHub::loop() {
     this->sync_loop_();
     return;
   }
-
   auto cur_time = millis();
   auto const cur_mode = this->opentherm_->get_mode();
 
@@ -291,6 +290,18 @@ void OpenthermHub::loop() {
       break;
   }
   this->last_mode_ = cur_mode;
+
+  if (response.id == (MessageId)0) {  // STATUS
+    uint8_t hb = response.valueHB;
+    uint8_t lb = response.valueLB;
+    ESP_LOGD("opentherm",
+            "STATUS READ HB=0x%02X LB=0x%02X  cool=%d ch=%d dhw=%d flame=%d",
+            hb, lb,
+            (hb & 0x04) != 0,   // cool
+            (lb & 0x02) != 0,   // ch
+            (lb & 0x01) != 0,   // dhw
+            (lb & 0x08) != 0);  // flame
+  }
 }
 
 bool OpenthermHub::handle_error_(OperationMode mode) {
@@ -354,18 +365,6 @@ void OpenthermHub::sync_loop_() {
   // There may be a timer error at this point
   if (this->handle_error_(this->opentherm_->get_mode())) {
     return;
-  }
-
-  if (response.id == (MessageId)0) {  // STATUS
-    uint8_t hb = response.valueHB;
-    uint8_t lb = response.valueLB;
-    ESP_LOGD("opentherm",
-            "STATUS READ HB=0x%02X LB=0x%02X  cool=%d ch=%d dhw=%d flame=%d",
-            hb, lb,
-            (hb & 0x04) != 0,   // cool
-            (lb & 0x02) != 0,   // ch
-            (lb & 0x01) != 0,   // dhw
-            (lb & 0x08) != 0);  // flame
   }
 
   // Spin while response is being received
