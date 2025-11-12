@@ -81,16 +81,14 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
   if (request_id == static_cast<MessageId>(0)) {  // STATUS
     OpenthermData d; d.id = request_id;
     if (this->cooling_enable && ((this->cool_write_cycle_++ % 5u) == 0u)) {
-      // 1x per 5 cycli WRITE 0x0600 → CoolingEnable=ON
       d.type = MessageType::WRITE_DATA;
-      d.valueHB = 0x06;  // 0x0600
+      d.valueHB = 0x06;   // 0x0600 => CoolingEnable=ON (CH=0, DHW=1, COOL=1)
       d.valueLB = 0x00;
+      ESP_LOGD("opentherm", "FORCE WRITE STATUS 0x0600 (cool enable)");
       return d;
     }
-    // anders gewoon READ (payload wordt genegeerd)
-    d.type = MessageType::READ_DATA;
-    d.valueHB = 0x00;
-    d.valueLB = 0x00;
+    d.type = MessageType::READ_DATA;   // default
+    d.valueHB = 0x00; d.valueLB = 0x00;
     return d;
   }
 
@@ -197,13 +195,17 @@ void OpenthermHub::setup() {
     return;
   }
 
-  // Ensure that there is at least one request, as we are required to
-  // communicate at least once every second. Sending the status request is
-  // good practice anyway.
+  // Elke seconde minstens één bericht — status is verplicht.
   this->add_repeating_message(MessageId::STATUS);
-  this->add_repeating_message(static_cast<MessageId>(0));  // 0x00 Status (READ)
-  this->add_repeating_message(static_cast<MessageId>(1));  // 0x01 CH setpoint (WRITE 10.00)
-  this->add_repeating_message(static_cast<MessageId>(16)); // 0x10 Room setpoint (WRITE target)
+
+  // Voeg de drie belangrijkste berichten toe in de gewenste volgorde:
+  this->add_repeating_message(static_cast<MessageId>(0));   // 0x00 STATUS
+  this->add_repeating_message(static_cast<MessageId>(1));   // 0x01 CH setpoint (WRITE 10°C)
+  this->add_repeating_message(static_cast<MessageId>(16));  // 0x10 Room setpoint (WRITE 18–19°C)
+
+  // Voor debug en consistent gedrag
+  ESP_LOGI(TAG, "Repeating messages configured: STATUS (0), CH_SETPOINT (1), ROOM_SETPOINT (16)");
+
   this->write_initial_messages_(this->messages_);
   this->message_iterator_ = this->messages_.begin();
 }
