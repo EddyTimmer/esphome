@@ -206,6 +206,8 @@ void OpenthermHub::setup() {
 
   // Voor debug en consistent gedrag
   ESP_LOGI(TAG, "Repeating messages configured: STATUS (0), CH_SETPOINT (1), ROOM_SETPOINT (16)");
+  ESP_LOGD("opentherm", "STATUS branch: cooling_enable=%d, cycle=%u",
+         (int)this->cooling_enable, (unsigned)this->cool_write_cycle_);
 
   this->write_initial_messages_(this->messages_);
   this->message_iterator_ = this->messages_.begin();
