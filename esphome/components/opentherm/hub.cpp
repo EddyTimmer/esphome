@@ -76,7 +76,7 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
 
 if (request_id == static_cast<MessageId>(7)) {
   OpenthermData d; d.id = request_id;
-  if (this->cooling_enable) {
+  if (this->cooling_enable) {   // exact deze naam
     d.type = MessageType::WRITE_DATA;
     uint16_t w = pack_f88(57.0f);
     d.valueHB = w >> 8; d.valueLB = w & 0xFF;
