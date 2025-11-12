@@ -192,6 +192,17 @@ void OpenthermHub::process_response(OpenthermData &data) {
            this->opentherm_->message_id_to_str((MessageId) data.id));
   this->opentherm_->debug_data(data);
 
+  if (data.id == static_cast<MessageId>(0) && (data.type == MessageType::READ_ACK || data.type == MessageType::WRITE_ACK)) {
+    uint8_t hb = data.valueHB;
+    uint8_t lb = data.valueLB;
+    bool cool  = (hb & 0x04) != 0;  // let op: bitmapping kan per implementatie verschillen; dit volgt jouw log
+    bool ch    = (lb & 0x02) != 0;
+    bool dhw   = (lb & 0x01) != 0;
+    bool flame = (lb & 0x08) != 0;
+    ESP_LOGD(TAG, "STATUS READ HB=0x%02X LB=0x%02X  cool=%d ch=%d dhw=%d flame=%d",
+             hb, lb, (int)cool, (int)ch, (int)dhw, (int)flame);
+  }
+  
   switch (data.id) {
     OPENTHERM_SENSOR_MESSAGE_HANDLERS(OPENTHERM_MESSAGE_RESPONSE_MESSAGE, OPENTHERM_MESSAGE_RESPONSE_ENTITY, ,
                                       OPENTHERM_MESSAGE_RESPONSE_POSTSCRIPT, )
@@ -201,16 +212,6 @@ void OpenthermHub::process_response(OpenthermData &data) {
                                              OPENTHERM_MESSAGE_RESPONSE_POSTSCRIPT, )
   }
 
-  if (response.id == (MessageId)0) {
-    uint8_t hb = response.valueHB;
-    uint8_t lb = response.valueLB;
-    ESP_LOGD(TAG, "STATUS READ HB=0x%02X LB=0x%02X  cool=%d ch=%d dhw=%d flame=%d",
-            hb, lb,
-            (hb & 0x04) != 0,
-            (lb & 0x02) != 0,
-            (lb & 0x01) != 0,
-            (lb & 0x08) != 0);
-  }
 }
 
 void OpenthermHub::setup() {
