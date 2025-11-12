@@ -67,18 +67,33 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
   data.valueHB = 0;
   data.valueLB = 0;
 
+  // Kleine helper om float → f8.8 te packen
+  auto pack_f88 = [](float v) -> uint16_t {
+    if (v < 0.0f) v = 0.0f;
+    if (v > 255.996f) v = 255.996f;  // cap
+    return static_cast<uint16_t>(lroundf(v * 256.0f));  // f * 2^8
+  };
 
-  if (request_id == MessageId::COOLING_CONTROL /* id 57 of 7 bij jouw lib */ && cooling_enable) {
+  // --- ID 7: Cooling control ≈ 57.00 ---
+  if (request_id == static_cast<MessageId>(7) && this->cooling_enable) {
+    OpenthermData data;
     data.type = MessageType::WRITE_DATA;
-    data.value = encodeFloat(57.0f);
+    uint16_t w = pack_f88(57.0f);         // 57.00 → f8.8
+    data.valueHB = (w >> 8) & 0xFF;
+    data.valueLB = (w      ) & 0xFF;
     return data;
   }
-  if (request_id == MessageId::MAX_MODULATION /* id 14 */ && cooling_enable) {
+
+  // --- ID 14: Max modulation level = 100% ---
+  if (request_id == static_cast<MessageId>(14) && this->cooling_enable) {
+    OpenthermData data;
     data.type = MessageType::WRITE_DATA;
-    data.value = encodeFloat(100.0f);
+    uint16_t w = pack_f88(100.0f);        // 100.00 → f8.8
+    data.valueHB = (w >> 8) & 0xFF;
+    data.valueLB = (w      ) & 0xFF;
     return data;
   }
-  
+
   // We need this special logic for STATUS message because we have two options for specifying boiler modes:
   // with static config values in the hub, or with separate switches.
   if (request_id == MessageId::STATUS) {
