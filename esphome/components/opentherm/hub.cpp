@@ -198,10 +198,10 @@ void OpenthermHub::process_response(OpenthermData &data) {
     ESP_LOGD("opentherm",
             "STATUS READ HB=0x%02X LB=0x%02X  cool=%d ch=%d dhw=%d flame=%d",
             hb, lb,
-            (hb & 0x04) != 0,    // cool bit (voorbeeld)
-            (lb & 0x02) != 0,    // ch bit
-            (lb & 0x01) != 0,    // dhw bit
-            (lb & 0x08) != 0);   // flame bit
+            (hb & 0x04) != 0,   // cool
+            (lb & 0x02) != 0,   // ch
+            (lb & 0x01) != 0,   // dhw
+            (lb & 0x08) != 0);  // flame
   }
 
   switch (data.id) {
