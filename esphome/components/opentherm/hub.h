@@ -147,18 +147,13 @@ class OpenthermHub : public Component {
 
   // There are seven status variables, which can either be set as a simple variable,
   // or using a switch. ch_enable and dhw_enable default to true, the others to false.
-  bool ch_enable = false, dhw_enable = true, cooling_enable = true, otc_active = false, ch2_active = false,
+  bool ch_enable = true, dhw_enable = true, cooling_enable = false, otc_active = false, ch2_active = false,
        summer_mode_active = false, dhw_block = false;
 
-  mutable bool master_status_dirty_ = true;   // mag in const functie gewist worden
-  mutable bool status_write_next_   = true;   // om WRITE/READ af te wisselen
-  mutable uint32_t last_cool_write_ms_ = 0;
-  mutable uint32_t cool_write_cycle_ = 0;
-
   // Setters for the status variables
-  void set_ch_enable(bool v)      { this->ch_enable = v; this->master_status_dirty_ = true; }
-  void set_dhw_enable(bool v)     { this->dhw_enable = v; this->master_status_dirty_ = true; }
-  void set_cooling_enable(bool v) { this->cooling_enable = v; this->master_status_dirty_ = true; }
+  void set_ch_enable(bool value) { this->ch_enable = value; }
+  void set_dhw_enable(bool value) { this->dhw_enable = value; }
+  void set_cooling_enable(bool value) { this->cooling_enable = value; }
   void set_otc_active(bool value) { this->otc_active = value; }
   void set_ch2_active(bool value) { this->ch2_active = value; }
   void set_summer_mode_active(bool value) { this->summer_mode_active = value; }

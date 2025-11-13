@@ -67,84 +67,27 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
   data.valueHB = 0;
   data.valueLB = 0;
 
-  #include <math.h>
-  auto pack_f88 = [](float v){ if(v<0)v=0; if(v>255.996f)v=255.996f; return (uint16_t)lroundf(v*256.0f); };
-
-  if (request_id == static_cast<MessageId>(7)) {
-    OpenthermData d; d.id = request_id;
-    d.type = MessageType::READ_DATA;        // ← i.p.v. WRITE_DATA
-    d.valueHB = 0;
-    d.valueLB = 0;
-    return d;
-  }
-
-  if (request_id == (MessageId)7) {
-    OpenthermData d; d.id = request_id;
-    if (this->cooling_enable) {
-      d.type = MessageType::WRITE_DATA;
-      uint16_t w = pack_f88(0.0f);
-      d.valueHB = w >> 8; d.valueLB = w & 0xFF;
-    } else {
-      d.type = MessageType::READ_DATA; d.valueHB = 0; d.valueLB = 0;
-    }
-    return d;
-  }
-
-  // ID14: Max modulation -> bij koelen 100%
-  if (request_id == (MessageId)14) {
-    OpenthermData d; d.id = request_id;
-    d.type = MessageType::WRITE_DATA;
-    uint16_t w = pack_f88(this->cooling_enable ? 100.0f : 0.0f);
-    d.valueHB = w >> 8; d.valueLB = w & 0xFF;
-    return d;
-  }
-
-  // ID16: Room setpoint -> bij koelen bv. 18.5 °C
-  if (request_id == (MessageId)16) {
-    OpenthermData d; d.id = request_id;
-    d.type = MessageType::WRITE_DATA;
-    float sp = this->cooling_enable ? 18.5f : 21.0f;
-    uint16_t w = pack_f88(sp);
-    d.valueHB = w >> 8; d.valueLB = w & 0xFF;
-    return d;
-  }
-
-  // ID1: CH setpoint -> bij koelen 10.0 °C
-  if (request_id == (MessageId)1) {
-    OpenthermData d; d.id = request_id;
-    d.type = MessageType::WRITE_DATA;
-    float tset = this->cooling_enable ? 10.0f : 21.0f;
-    uint16_t w = pack_f88(tset);
-    d.valueHB = w >> 8; d.valueLB = w & 0xFF;
-    return d;
-  }
-
-
   // We need this special logic for STATUS message because we have two options for specifying boiler modes:
   // with static config values in the hub, or with separate switches.
   if (request_id == MessageId::STATUS) {
-    // Als er iets veranderde of we staan op WRITE, schrijf master HB-bits
-    if (master_status_dirty_ || status_write_next_) {
-      data.type    = MessageType::WRITE_DATA;
-      data.valueLB = 0x00;  // slave byte niet door ons gevuld
-      data.valueHB =
-          (ch_enable           ? (1 << 0) : 0) |
-          (dhw_enable          ? (1 << 1) : 0) |
-          (cooling_enable      ? (1 << 2) : 0) |
-          (otc_active          ? (1 << 3) : 0) |
-          (ch2_active          ? (1 << 4) : 0) |
-          (summer_mode_active  ? (1 << 5) : 0) |
-          (dhw_block           ? (1 << 6) : 0);
-      master_status_dirty_ = false;
-      status_write_next_   = false;   // volgende keer READ
-    } else {
-      data.type = MessageType::READ_DATA;
-      status_write_next_ = true;      // volgende keer WRITE
-    }
+    // NOLINTBEGIN
+    bool const ch_enabled = this->ch_enable && OPENTHERM_READ_ch_enable && OPENTHERM_READ_t_set > 0.0;
+    bool const dhw_enabled = this->dhw_enable && OPENTHERM_READ_dhw_enable;
+    bool const cooling_enabled =
+        this->cooling_enable && OPENTHERM_READ_cooling_enable && OPENTHERM_READ_cooling_control > 0.0;
+    bool const otc_enabled = this->otc_active && OPENTHERM_READ_otc_active;
+    bool const ch2_enabled = this->ch2_active && OPENTHERM_READ_ch2_active && OPENTHERM_READ_t_set_ch2 > 0.0;
+    bool const summer_mode_is_active = this->summer_mode_active && OPENTHERM_READ_summer_mode_active;
+    bool const dhw_blocked = this->dhw_block && OPENTHERM_READ_dhw_block;
+    // NOLINTEND
+
+    data.type = MessageType::READ_DATA;
+    data.valueHB = ch_enabled | (dhw_enabled << 1) | (cooling_enabled << 2) |
+                  (otc_enabled << 3) | (ch2_enabled << 4) |
+                  (summer_mode_is_active << 5) | (dhw_blocked << 6);
+
     return data;
   }
-
-
 
   // Next, we start with write requests from switches and other inputs,
   // because we would want to write that data if it is available, rather than
@@ -192,17 +135,6 @@ void OpenthermHub::process_response(OpenthermData &data) {
            this->opentherm_->message_id_to_str((MessageId) data.id));
   this->opentherm_->debug_data(data);
 
-  if (data.id == static_cast<MessageId>(0) && (data.type == MessageType::READ_ACK || data.type == MessageType::WRITE_ACK)) {
-    uint8_t hb = data.valueHB;
-    uint8_t lb = data.valueLB;
-    bool cool  = (hb & 0x04) != 0;  // let op: bitmapping kan per implementatie verschillen; dit volgt jouw log
-    bool ch    = (lb & 0x02) != 0;
-    bool dhw   = (lb & 0x01) != 0;
-    bool flame = (lb & 0x08) != 0;
-    ESP_LOGD(TAG, "STATUS READ HB=0x%02X LB=0x%02X  cool=%d ch=%d dhw=%d flame=%d",
-             hb, lb, (int)cool, (int)ch, (int)dhw, (int)flame);
-  }
-
   switch (data.id) {
     OPENTHERM_SENSOR_MESSAGE_HANDLERS(OPENTHERM_MESSAGE_RESPONSE_MESSAGE, OPENTHERM_MESSAGE_RESPONSE_ENTITY, ,
                                       OPENTHERM_MESSAGE_RESPONSE_POSTSCRIPT, )
@@ -211,7 +143,6 @@ void OpenthermHub::process_response(OpenthermData &data) {
     OPENTHERM_BINARY_SENSOR_MESSAGE_HANDLERS(OPENTHERM_MESSAGE_RESPONSE_MESSAGE, OPENTHERM_MESSAGE_RESPONSE_ENTITY, ,
                                              OPENTHERM_MESSAGE_RESPONSE_POSTSCRIPT, )
   }
-
 }
 
 void OpenthermHub::setup() {
@@ -222,20 +153,10 @@ void OpenthermHub::setup() {
     return;
   }
 
-  // Elke seconde minstens één bericht — status is verplicht.
+  // Ensure that there is at least one request, as we are required to
+  // communicate at least once every second. Sending the status request is
+  // good practice anyway.
   this->add_repeating_message(MessageId::STATUS);
-
-  // Voeg de drie belangrijkste berichten toe in de gewenste volgorde:
-  add_repeating_message((MessageId)0);   // STATUS (READ)
-  add_repeating_message((MessageId)16);  // ROOM_SETPOINT (WRITE)
-  add_repeating_message((MessageId)1);   // CH_SETPOINT (WRITE)
-  add_repeating_message((MessageId)14);  // MAX_MODULATION (WRITE)
-
-  // Voor debug en consistent gedrag
-  ESP_LOGI(TAG, "Repeating messages configured: STATUS (0), CH_SETPOINT (1), ROOM_SETPOINT (16)");
-  ESP_LOGD("opentherm", "STATUS branch: cooling_enable=%d, cycle=%u",
-         (int)this->cooling_enable, (unsigned)this->cool_write_cycle_);
-
   this->write_initial_messages_(this->messages_);
   this->message_iterator_ = this->messages_.begin();
 }
@@ -272,6 +193,7 @@ void OpenthermHub::loop() {
     this->sync_loop_();
     return;
   }
+
   auto cur_time = millis();
   auto const cur_mode = this->opentherm_->get_mode();
 
@@ -401,6 +323,7 @@ bool OpenthermHub::should_skip_loop_(uint32_t cur_time) const {
     ESP_LOGV(TAG, "Less than 100 ms elapsed since last convo, skipping this iteration");
     return true;
   }
+
   return false;
 }
 
