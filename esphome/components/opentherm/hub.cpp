@@ -70,21 +70,25 @@ OpenthermData OpenthermHub::build_request_(MessageId request_id) const {
   // We need this special logic for STATUS message because we have two options for specifying boiler modes:
   // with static config values in the hub, or with separate switches.
   if (request_id == MessageId::STATUS) {
-    // NOLINTBEGIN
-    bool const ch_enabled = this->ch_enable && OPENTHERM_READ_ch_enable && OPENTHERM_READ_t_set > 0.0;
-    bool const dhw_enabled = this->dhw_enable && OPENTHERM_READ_dhw_enable;
-    bool const cooling_enabled =
-        this->cooling_enable && OPENTHERM_READ_cooling_enable && OPENTHERM_READ_cooling_control > 0.0;
-    bool const otc_enabled = this->otc_active && OPENTHERM_READ_otc_active;
-    bool const ch2_enabled = this->ch2_active && OPENTHERM_READ_ch2_active && OPENTHERM_READ_t_set_ch2 > 0.0;
-    bool const summer_mode_is_active = this->summer_mode_active && OPENTHERM_READ_summer_mode_active;
-    bool const dhw_blocked = this->dhw_block && OPENTHERM_READ_dhw_block;
-    // NOLINTEND
+    // Gebruik alleen de booleans van de hub / switches
+    bool const ch_enabled              = this->ch_enable;
+    bool const dhw_enabled             = this->dhw_enable;
+    bool const cooling_enabled         = this->cooling_enable;      // HCE20M: bit2 = koelen
+    bool const otc_enabled             = this->otc_active;
+    bool const ch2_enabled             = this->ch2_active;
+    bool const summer_mode_is_active   = this->summer_mode_active;
+    bool const dhw_blocked             = this->dhw_block;
 
+    // Master-status wordt in de HB gezet, slave vult LB zelf in
     data.type = MessageType::READ_DATA;
-    data.valueHB = ch_enabled | (dhw_enabled << 1) | (cooling_enabled << 2) |
-                  (otc_enabled << 3) | (ch2_enabled << 4) |
-                  (summer_mode_is_active << 5) | (dhw_blocked << 6);
+    data.valueHB = ch_enabled |
+                  (dhw_enabled            << 1) |
+                  (cooling_enabled        << 2) |
+                  (otc_enabled            << 3) |
+                  (ch2_enabled            << 4) |
+                  (summer_mode_is_active  << 5) |
+                  (dhw_blocked            << 6);
+    data.valueLB = 0x00;
 
     return data;
   }
